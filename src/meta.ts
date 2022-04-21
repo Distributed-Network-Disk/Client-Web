@@ -39,7 +39,10 @@ export interface ServerMeta {
 }
 
 export interface FileMeta {
-  shards: string[][]
+  shards: string[]
   modified: number
   size: number
+  padding: number
+  parityNum: number
+  shardSize: number
 }

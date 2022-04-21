@@ -4,7 +4,7 @@
 export class RSE {
   constructor(private dataShardNum: number, private parityShardNum: number) {}
 
-  async encode(data: Uint8Array[]): Uint8Array[] {}
+  async encode(data: Uint8Array[]): Promise<Uint8Array[]> {}
 
-  async reconstruct(data: Uint8Array[]): Uint8Array[] {}
+  async reconstruct(data: Uint8Array[]): Promise<Uint8Array[]> {}
 }
