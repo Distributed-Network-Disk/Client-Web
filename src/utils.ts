@@ -10,6 +10,19 @@ export async function convertBlob2View(blobs: Blob[]) {
   return res
 }
 
+export async function convertBlob2ViewNullable(blobs: (Blob | null)[]) {
+  let res = [] as (Uint8Array | null)[]
+  for (const blob of blobs) {
+    if (blob === null) {
+      res.push(null)
+    } else {
+      const arrBuf = await blob.arrayBuffer()
+      res.push(new Uint8Array(arrBuf))
+    }
+  }
+  return res
+}
+
 export function randChoice<T>(array: T[], n?: number) {
   if (n == undefined) {
     return array[Math.floor(Math.random() * array.length)]!

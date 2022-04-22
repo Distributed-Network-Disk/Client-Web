@@ -4,7 +4,7 @@
 import { FileMeta, MetaClient } from './meta'
 import { S3Client } from './s3'
 import { RSE } from './rse'
-import { convertBlob2View, randChoice } from './utils'
+import * as utils from './utils'
 
 export interface Config {
   dataShardNum: number
@@ -43,7 +43,9 @@ export class Client {
     }
     const indexes = this.distribute(servers.length, this.config.dataShardNum)
     meta.shards = indexes.map(i => servers[i]!.id)
-    const s3Clients = indexes.map(i => servers[i]!).map(server => new S3Client(server.url, this.config.bucket))
+    const s3Clients = indexes
+      .map(i => servers[i]!)
+      .map(server => new S3Client(server.url, this.config.bucket, this.config.shardSize))
     const uploadIds = [] as string[]
     for (let i = 0; i < s3Clients.length; i++) {
       uploadIds.push(await s3Clients[i]!.uploadStart(path, i))
@@ -56,7 +58,7 @@ export class Client {
         break
       }
       const shards = value as Blob[]
-      let bins = await convertBlob2View(shards)
+      let bins = await utils.convertBlob2View(shards)
       const resBins = await this.rse.encode(bins)
       for (let j = 0; j < resBins.length; j++) {
         await s3Clients[j]!.uploadPart(path, j, uploadIds[j]!, new Blob([resBins[j]!]), i)
@@ -72,13 +74,27 @@ export class Client {
   async download(path: string) {
     const servers = await this.metaClient.servers()
     const meta = await this.metaClient.get(path)
+    const s3Clients = meta.shards
+      .map(serverId => servers.find(server => server.id == serverId))
+      .map(server => (server ? new S3Client(server.url, this.config.bucket, this.config.shardSize) : undefined))
+    const lost = servers.length - s3Clients.filter(Boolean).length
+    if (lost > meta.parityNum) {
+      throw new Error(`File corrupt: Only allow ${meta.parityNum} lost but ${lost} lost actually`)
+    }
     let res = [] as Blob[]
-    for (let shard of meta.shards) {
-      // Do download
-      const shards = [] as Blob[]
-      const bins = await convertBlob2View(shards)
+    for (let i = 0; i < Math.ceil(meta.size / meta.shardSize); i++) {
+      let shards = [] as (Blob | null)[]
+      for (let j = 0; j < s3Clients.length; j++) {
+        const s3Client = s3Clients[j]
+        if (s3Client == undefined) {
+          shards.push(null)
+        } else {
+          shards.push(await s3Client.downloadPart(path, j, i))
+        }
+      }
+      const bins = await utils.convertBlob2ViewNullable(shards)
       const resBins = await this.rse.reconstruct(bins)
-      res.push(new Blob(resBins))
+      res.push(new Blob(resBins.slice(0, shards.length - meta.parityNum)))
     }
     return new Blob(res)
   }
@@ -108,6 +124,6 @@ export class Client {
         `Servers not enough: dataShardNum = ${this.config.dataShardNum}, parityShardNum = ${this.config.parityShardNum}`
       )
     }
-    return randChoice([...new Array(serverNum).keys()], shardNum) as number[]
+    return utils.randChoice([...new Array(serverNum).keys()], shardNum) as number[]
   }
 }

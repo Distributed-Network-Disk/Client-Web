@@ -6,5 +6,5 @@ export class RSE {
 
   async encode(data: Uint8Array[]): Promise<Uint8Array[]> {}
 
-  async reconstruct(data: Uint8Array[]): Promise<Uint8Array[]> {}
+  async reconstruct(data: (Uint8Array | null)[]): Promise<Uint8Array[]> {}
 }

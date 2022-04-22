@@ -6,18 +6,28 @@ import {
   CreateMultipartUploadCommand,
   UploadPartCommand,
   CompleteMultipartUploadCommand,
+  GetObjectCommand,
 } from '@aws-sdk/client-s3'
 
 export class S3Client {
   private client: RawS3Client
 
-  constructor(url: string, private bucket: string) {
+  constructor(url: string, private bucket: string, private shardSize: number) {
     this.client = new RawS3Client({
       endpoint: url,
     })
   }
 
-  async download(path: string, seq: number): Promise<Blob> {}
+  async downloadPart(path: string, seq: number, partNum: number) {
+    const res = await this.client.send(
+      new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: `${path}.${seq}`,
+        PartNumber: partNum,
+      })
+    )
+    return res.Body as Blob
+  }
 
   async uploadStart(path: string, seq: number) {
     const res = await this.client.send(
