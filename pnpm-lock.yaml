@@ -7,11 +7,13 @@ specifiers:
   esbuild: ^0.14.36
   ioredis: ^5.0.4
   prettier: ^2.6.2
+  rse-wasm: link:lib/rse-wasm/pkg
   typescript: ^4.6.3
 
 dependencies:
   '@aws-sdk/client-s3': 3.72.0
   ioredis: 5.0.4
+  rse-wasm: link:lib/rse-wasm/pkg
 
 devDependencies:
   '@tsconfig/node16-strictest-esm': 1.0.1

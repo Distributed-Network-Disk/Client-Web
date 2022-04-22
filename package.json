@@ -30,6 +30,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.72.0",
-    "ioredis": "^5.0.4"
+    "ioredis": "^5.0.4",
+    "rse-wasm": "link:lib/rse-wasm/pkg"
   }
 }
